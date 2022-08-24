@@ -16,9 +16,10 @@ use Geocoder\Exception\InvalidCredentials;
 use Geocoder\Exception\InvalidServerResponse;
 use Geocoder\Exception\QuotaExceeded;
 use Geocoder\Provider\AbstractProvider;
-use Http\Message\MessageFactory;
-use Http\Discovery\MessageFactoryDiscovery;
+use Http\Discovery\Psr17FactoryDiscovery;
+use Http\Discovery\Psr18ClientDiscovery;
 use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\RequestInterface;
 
 /**
@@ -33,18 +34,18 @@ abstract class AbstractHttpProvider extends AbstractProvider
     private $client;
 
     /**
-     * @var MessageFactory
+     * @var RequestFactoryInterface
      */
     private $messageFactory;
 
     /**
      * @param ClientInterface     $client
-     * @param MessageFactory|null $factory
+     * @param RequestFactoryInterface|null $factory
      */
-    public function __construct(ClientInterface $client, MessageFactory $factory = null)
+    public function __construct(ClientInterface $client = null, RequestFactoryInterface $factory = null)
     {
-        $this->client = $client;
-        $this->messageFactory = $factory ?: MessageFactoryDiscovery::find();
+        $this->client = $client ?? Psr18ClientDiscovery::find();
+        $this->messageFactory = $factory ?? Psr17FactoryDiscovery::findRequestFactory();
     }
 
     /**
@@ -114,9 +115,9 @@ abstract class AbstractHttpProvider extends AbstractProvider
     }
 
     /**
-     * @return MessageFactory
+     * @return RequestFactoryInterface
      */
-    protected function getMessageFactory(): MessageFactory
+    protected function getMessageFactory(): RequestFactoryInterface
     {
         return $this->messageFactory;
     }
