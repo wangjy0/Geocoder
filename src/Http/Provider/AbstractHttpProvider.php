@@ -21,6 +21,7 @@ use Http\Discovery\Psr18ClientDiscovery;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\StreamFactoryInterface;
 
 /**
  * @author William Durand <william.durand1@gmail.com>
@@ -36,16 +37,23 @@ abstract class AbstractHttpProvider extends AbstractProvider
     /**
      * @var RequestFactoryInterface
      */
-    private $messageFactory;
+    private $requestFactory;
 
     /**
-     * @param ClientInterface     $client
-     * @param RequestFactoryInterface|null $factory
+     * @var StreamFactoryInterface
      */
-    public function __construct(ClientInterface $client = null, RequestFactoryInterface $factory = null)
+    private $streamFactory;
+
+    /**
+     * @param ClientInterface|null $client
+     * @param RequestFactoryInterface|null $requestFactory
+     * @param StreamFactoryInterface|null $streamFactory
+     */
+    public function __construct(ClientInterface $client = null, RequestFactoryInterface $requestFactory = null, StreamFactoryInterface $streamFactory = null)
     {
         $this->client = $client ?? Psr18ClientDiscovery::find();
-        $this->messageFactory = $factory ?? Psr17FactoryDiscovery::findRequestFactory();
+        $this->requestFactory = $requestFactory ?? Psr17FactoryDiscovery::findRequestFactory();
+        $this->streamFactory = $streamFactory ?? Psr17FactoryDiscovery::findStreamFactory();
     }
 
     /**
@@ -71,7 +79,7 @@ abstract class AbstractHttpProvider extends AbstractProvider
      */
     protected function getRequest(string $url): RequestInterface
     {
-        return $this->getMessageFactory()->createRequest('GET', $url);
+        return $this->getRequestFactory()->createRequest('GET', $url);
     }
 
     /**
@@ -117,8 +125,16 @@ abstract class AbstractHttpProvider extends AbstractProvider
     /**
      * @return RequestFactoryInterface
      */
-    protected function getMessageFactory(): RequestFactoryInterface
+    protected function getRequestFactory(): RequestFactoryInterface
     {
-        return $this->messageFactory;
+        return $this->requestFactory;
+    }
+
+    /**
+     * @return StreamFactoryInterface
+     */
+    protected function getStreamFactory(): StreamFactoryInterface
+    {
+        return $this->streamFactory;
     }
 }

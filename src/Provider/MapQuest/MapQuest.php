@@ -243,9 +243,9 @@ final class MapQuest extends AbstractHttpProvider implements Provider
         unset($params[static::KEY_API_KEY]);
         $url .= '?key='.$appKey;
 
-        $requestBody = json_encode($params);
-        $request = $this->getMessageFactory()->createRequest('POST', $url, [], $requestBody);
-
+        $requestBody = $this->getStreamFactory()->createStream(json_encode($params));
+        $request = $this->getRequestFactory()->createRequest('POST', $url);
+        $request = $request->withBody($requestBody);
         $response = $this->getHttpClient()->sendRequest($request);
         $content = $this->parseHttpResponse($response, $url);
 

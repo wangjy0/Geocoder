@@ -24,6 +24,7 @@ use Geocoder\Query\GeocodeQuery;
 use Geocoder\Query\ReverseQuery;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\StreamInterface;
 
 class AlgoliaPlaces extends AbstractHttpProvider implements Provider
 {
@@ -53,15 +54,12 @@ class AlgoliaPlaces extends AbstractHttpProvider implements Provider
     /** @var GeocodeQuery */
     private $query;
 
-    /** @var ClientInterface */
-    private $client;
 
     public function __construct(ClientInterface $client, string $apiKey = null, string $appId = null)
     {
         parent::__construct($client);
 
         $this->apiKey = $apiKey;
-        $this->client = $client;
         $this->appId = $appId;
     }
 
@@ -79,7 +77,7 @@ class AlgoliaPlaces extends AbstractHttpProvider implements Provider
         $this->query = $query;
 
         $request = $this->getRequest(self::ENDPOINT_URL_SSL);
-        $jsonParsed = AbstractHttpProvider::getParsedResponse($request);
+        $jsonParsed = $this->getParsedResponse($request);
         $jsonResponse = json_decode($jsonParsed, true);
 
         if (is_null($jsonResponse)) {
@@ -116,15 +114,15 @@ class AlgoliaPlaces extends AbstractHttpProvider implements Provider
 
     protected function getRequest(string $url): RequestInterface
     {
-        return $this->getMessageFactory()->createRequest(
-            'POST',
-            $url,
-            $this->buildHeaders(),
-            $this->buildData()
-        );
+        $request =  $this->getRequestFactory()->createRequest('POST', $url);
+        foreach ($this->buildHeaders() as $key => $value){
+            $request = $request->withHeader($key, $value);
+        }
+        $request = $request->withBody($this->buildData());
+        return $request;
     }
 
-    private function buildData(): string
+    private function buildData(): StreamInterface
     {
         $query = $this->query;
         $params = [
@@ -135,7 +133,9 @@ class AlgoliaPlaces extends AbstractHttpProvider implements Provider
             'countries' => $this->buildCountries($query),
         ];
 
-        return json_encode(array_filter($params));
+        $params = json_encode(array_filter($params));
+
+        return $this->getStreamFactory()->createStream($params);
     }
 
     private function buildType(GeocodeQuery $query): string
